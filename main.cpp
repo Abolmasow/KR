@@ -39,3 +39,14 @@ private:
         return space_pos != std::string::npos ? tag_content.substr(0, space_pos) : tag_content;
     }
 };
+
+// Класс для проверки тегов на безопасность
+class TagValidator {
+private:
+    std::unordered_set<std::string> safe_tags = { "a", "b", "i", "u", "p" }; // Разрешенные теги
+
+public:
+    bool isSafe(const HtmlTag& tag) {
+        return safe_tags.find(tag.name) != safe_tags.end();
+    }
+};
