@@ -124,3 +124,19 @@ public:
         logger.log("Output: " + output);
     }
 };
+
+// Класс для пользовательского интерфейса (консоли)
+class ConsoleInterface {
+public:
+    void start() {
+        SanitizerTester tester;
+        tester.test();
+    }
+};
+
+// Главная функция
+int main() {
+    ConsoleInterface console;
+    console.start();
+    return 0;
+}
