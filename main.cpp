@@ -50,3 +50,12 @@ public:
         return safe_tags.find(tag.name) != safe_tags.end();
     }
 };
+
+// Класс для обработки атрибутов
+class AttributeHandler {
+public:
+    void sanitizeAttributes(HtmlTag& tag) {
+// В данном примере просто очищаем атрибуты
+        tag.attributes.clear();
+    }
+};
