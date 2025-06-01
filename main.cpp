@@ -109,3 +109,18 @@ public:
         std::cerr << "[ERROR]: " << error << std::endl;
     }
 };
+
+// Класс для тестирования санитайзера
+class SanitizerTester {
+private:
+    Logger logger;
+
+public:
+    void test() {
+        HtmlSanitizer sanitizer;
+        std::string input = "<script>alert('XSS');</script><b>Bold</b>";
+        std::string output = sanitizer.sanitize(input);
+        logger.log("Input: " + input);
+        logger.log("Output: " + output);
+    }
+};
