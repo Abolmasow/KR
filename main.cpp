@@ -2,77 +2,84 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
-#include <algorithm>
 #include <sstream>
+#include <regex>
 
-// Класс для представления HTML-тега
+using namespace std;
+
 class HtmlTag {
 public:
-    std::string name;
-    std::unordered_set<std::string> attributes;
+    string name;
 
-    HtmlTag(const std::string& name) : name(name) {}
+    HtmlTag(const string& tagName) : name(tagName) {}
+    virtual ~HtmlTag() = default;
 };
 
-// Класс для парсинга HTML
+class SafeTag : public HtmlTag {
+public:
+    SafeTag(const string& tagName) : HtmlTag(tagName) {}
+};
+
+class UnsafeTag : public HtmlTag {
+public:
+    UnsafeTag(const string& tagName) : HtmlTag(tagName) {}
+};
+
 class HtmlParser {
 public:
-    std::vector<HtmlTag> parse(const std::string& html) {
-        std::vector<HtmlTag> tags;
-// Простейший парсинг HTML (для примера; реальный парсер был бы сложнее)
-        size_t pos = 0;
-        while ((pos = html.find('<', pos)) != std::string::npos) {
-            size_t end = html.find('>', pos);
-            if (end == std::string::npos) break;
+    vector<string> parse(const string& html) {
+        regex tagRegex(R"(<\s([^ >]+)[^>]>)");
+        vector<string> tags;
+        smatch match;
 
-            std::string tag_content = html.substr(pos + 1, end - pos - 1);
-            HtmlTag tag(getTagName(tag_content));
-            tags.push_back(tag);
-            pos = end + 1;
+        auto searchStart = html.cbegin();
+        while (regex_search(searchStart, html.cend(), match, tagRegex)) {
+            tags.push_back(match[1].str());
+            searchStart = match.suffix().first;
         }
         return tags;
     }
+};
 
-private:
-    std::string getTagName(const std::string& tag_content) {
-        size_t space_pos = tag_content.find(' ');
-        return space_pos != std::string::npos ? tag_content.substr(0, space_pos) : tag_content;
+class TagFactory {
+public:
+    static HtmlTag* createTag(const string& name, bool isSafe) {
+        if (isSafe) {
+            return new SafeTag(name);
+        } else {
+            return new UnsafeTag(name);
+        }
     }
 };
 
-// Класс для проверки тегов на безопасность
 class TagValidator {
 private:
-    std::unordered_set<std::string> safe_tags = { "a", "b", "i", "u", "p" }; // Разрешенные теги
+    unordered_set<string> safeTags = { "b", "i", "u", "p", "a" }; // Разрешенные теги
 
 public:
-    bool isSafe(const HtmlTag& tag) {
-        return safe_tags.find(tag.name) != safe_tags.end();
+    bool isSafe(const string& tag) {
+        return safeTags.find(tag) != safeTags.end();
     }
 };
 
-// Класс для обработки атрибутов
 class AttributeHandler {
 public:
     void sanitizeAttributes(HtmlTag& tag) {
-// В данном примере просто очищаем атрибуты
-        tag.attributes.clear();
+// В данном случае мы просто игнорируем их
     }
 };
 
-// Класс для генерации итогового HTML
 class HtmlGenerator {
 public:
-    std::string generate(const std::vector<HtmlTag>& tags) {
-        std::ostringstream result;
+    string generate(const vector<HtmlTag*>& tags) {
+        ostringstream result;
         for (const auto& tag : tags) {
-            result << "<" << tag.name << ">";
+            result << "<" << tag->name << "></" << tag->name << ">";
         }
         return result.str();
     }
 };
 
-// Класс для основного санитайзера
 class HtmlSanitizer {
 private:
     HtmlParser parser;
@@ -81,62 +88,40 @@ private:
     HtmlGenerator generator;
 
 public:
-    std::string sanitize(const std::string& html) {
+    string sanitize(const string& html) {
+        vector<HtmlTag*> safeTags;
         auto tags = parser.parse(html);
-        std::vector<HtmlTag> safe_tags;
-        for (auto& tag : tags) {
-            if (validator.isSafe(tag)) {
-                attributeHandler.sanitizeAttributes(tag);
-                safe_tags.push_back(tag);
+
+        for (const auto& tagName : tags) {
+            bool isSafe = validator.isSafe(tagName);
+            HtmlTag* tag = TagFactory::createTag(tagName, isSafe);
+            attributeHandler.sanitizeAttributes(*tag);
+
+            if (isSafe) {
+                safeTags.push_back(tag);
+            } else {
+                delete tag; // Удаляем небезопасный тег
             }
         }
-        return generator.generate(safe_tags);
+
+        string sanitizedHtml = generator.generate(safeTags);
+
+        for (auto tag : safeTags) {
+            delete tag; // Очистка памяти
+        }
+
+        return sanitizedHtml;
     }
 };
 
-// Класс для ведения логов
-class Logger {
-public:
-    void log(const std::string& message) {
-        std::cout << "[LOG]: " << message << std::endl;
-    }
-};
-
-// Класс для обработки ошибок
-class ErrorHandler {
-public:
-    void handleError(const std::string& error) {
-        std::cerr << "[ERROR]: " << error << std::endl;
-    }
-};
-
-// Класс для тестирования санитайзера
-class SanitizerTester {
-private:
-    Logger logger;
-
-public:
-    void test() {
-        HtmlSanitizer sanitizer;
-        std::string input = "<script>alert('XSS');</script><b>Bold</b>";
-        std::string output = sanitizer.sanitize(input);
-        logger.log("Input: " + input);
-        logger.log("Output: " + output);
-    }
-};
-
-// Класс для пользовательского интерфейса (консоли)
-class ConsoleInterface {
-public:
-    void start() {
-        SanitizerTester tester;
-        tester.test();
-    }
-};
-
-// Главная функция
+// Пример использования
 int main() {
-    ConsoleInterface console;
-    console.start();
+    HtmlSanitizer sanitizer;
+    string input = "<script>alert('XSS');</script><b>Bold</b><i>Italic</i><u>Underline</u>";
+    string output = sanitizer.sanitize(input);
+
+    cout << "Input HTML: " << input << endl;
+    cout << "Sanitized HTML: " << output << endl;
+
     return 0;
 }
