@@ -71,3 +71,25 @@ public:
         return result.str();
     }
 };
+
+// Класс для основного санитайзера
+class HtmlSanitizer {
+private:
+    HtmlParser parser;
+    TagValidator validator;
+    AttributeHandler attributeHandler;
+    HtmlGenerator generator;
+
+public:
+    std::string sanitize(const std::string& html) {
+        auto tags = parser.parse(html);
+        std::vector<HtmlTag> safe_tags;
+        for (auto& tag : tags) {
+            if (validator.isSafe(tag)) {
+                attributeHandler.sanitizeAttributes(tag);
+                safe_tags.push_back(tag);
+            }
+        }
+        return generator.generate(safe_tags);
+    }
+};
