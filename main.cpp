@@ -59,3 +59,15 @@ public:
         tag.attributes.clear();
     }
 };
+
+// Класс для генерации итогового HTML
+class HtmlGenerator {
+public:
+    std::string generate(const std::vector<HtmlTag>& tags) {
+        std::ostringstream result;
+        for (const auto& tag : tags) {
+            result << "<" << tag.name << ">";
+        }
+        return result.str();
+    }
+};
