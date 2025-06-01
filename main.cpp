@@ -93,3 +93,19 @@ public:
         return generator.generate(safe_tags);
     }
 };
+
+// Класс для ведения логов
+class Logger {
+public:
+    void log(const std::string& message) {
+        std::cout << "[LOG]: " << message << std::endl;
+    }
+};
+
+// Класс для обработки ошибок
+class ErrorHandler {
+public:
+    void handleError(const std::string& error) {
+        std::cerr << "[ERROR]: " << error << std::endl;
+    }
+};
